@@ -14,7 +14,7 @@ namespace Project_FinchControl
     // Application Type: Console
     // Author: Thurman, Seth
     // Dated Created: 2/17/2020
-    // Last Modified: 3/19/2020
+    // Last Modified: 4/4/2020
     //
     // **************************************************
 
@@ -47,11 +47,20 @@ namespace Project_FinchControl
         /// <param name="args"></param>
         static void Main(string[] args)
         {
+            bool exit;
+
             SetTheme();
 
             DisplayWelcomeScreen();
-            DisplayMenuScreen();
-            DisplayClosingScreen();
+
+            exit = DisplayLoginScreen();
+
+            if (!exit)
+            {
+                DisplayMenuScreen();
+                DisplayClosingScreen();
+            }
+
         }
 
         /// <summary>
@@ -137,6 +146,287 @@ namespace Project_FinchControl
 
             } while (!quitApplication);
         }
+
+        #region LOGIN SCREEN
+        /// <summary>
+        /// *****************************************************************
+        /// *                     Login Title Screen                        *
+        /// *****************************************************************
+        /// </summary>
+        static bool DisplayLoginScreen()
+        {
+            bool exit = true;
+            string userInput;
+            bool valid;
+
+            do
+            {
+                DisplayScreenHeader("Login Screen");
+
+                valid = true;
+
+                Console.WriteLine("Have you already registered yourself \"Yes\" or \"No\"");
+                userInput = Console.ReadLine().ToLower();
+
+                if (userInput == "yes")
+                {
+                    exit = DisplayLogin();
+                }
+                else if (userInput == "no")
+                {
+                    DisplayRegistration();
+                    exit = DisplayLogin();
+                }
+                else
+                {
+                    valid = false;
+                    DisplayInvalidResponse();
+                }
+            } while (!valid);
+
+            return exit;
+        }
+
+
+        /// <summary>
+        /// *****************************************************************
+        /// *                       Registration                            *
+        /// *****************************************************************
+        /// </summary>
+        static void DisplayRegistration()
+        {
+            string userName;
+            string password;
+            string passwordConfirmed;
+            bool newUser = true;
+
+            // Adding new user
+            do
+            {
+
+                DisplayScreenHeader("Registration");
+
+                // Setting User Name
+                Console.WriteLine("To register please enter a User Name.");
+                userName = Console.ReadLine().ToLower();
+
+                // Setting Password
+                do
+                {
+                    DisplayScreenHeader("Registration");
+
+                    Console.WriteLine("Now enter a password");
+                    password = Console.ReadLine();
+
+                    Console.WriteLine("Please Reenter your password for confirmation");
+                    passwordConfirmed = Console.ReadLine();
+
+                    // if passwords is not the same
+                    if (password != passwordConfirmed)
+                    {
+                        Console.WriteLine("I am sorry but it seems that your passwords are not Identical Please Try again");
+
+                        DisplayContinuePrompt();
+                    }
+
+
+                } while (password != passwordConfirmed);
+
+                // Checking Information
+                newUser = DisplayCheckLoginInfo(userName, password);
+
+                if (newUser == false)
+                {
+                    Console.WriteLine("Sorry but this user already exists \n\tPlease try again");
+                    DisplayContinuePrompt();
+                }
+
+            } while (!newUser);
+
+
+            // Adding Login Info
+            DisplayAddLoginInfo(userName, password);
+
+            DisplayScreenHeader("Registration");
+
+            Console.WriteLine("Your Username: {0}\nand Password: {1}", userName, password);
+            DisplayContinuePrompt();
+        }
+
+        /// Checking Login Information
+        static bool DisplayCheckLoginInfo(string userName, string password)
+        {
+            bool valid = true;
+
+            List<(string userName, string password)> registeredUserLoginInfo = new List<(string userName, string password)>();
+
+
+            registeredUserLoginInfo = DisplayReadLoginInfoData();
+
+
+            foreach ((string userName, string password) userLoginInfo in registeredUserLoginInfo)
+            {
+                if ((userLoginInfo.userName == userName) && (userLoginInfo.password == password))
+                {
+                    valid = false;
+                }
+            }
+
+
+            return valid;
+        }
+
+        /// Adding Login Information
+        static void DisplayAddLoginInfo(string userName, string password)
+        {
+            string dataPath = @"Login Data/Data.txt";
+            string loginInfo;
+
+            loginInfo = "\n" + userName + "," + password;
+
+            File.AppendAllText(dataPath, loginInfo);
+        }
+
+        /// <summary>
+        /// *****************************************************************
+        /// *                           Login                               *
+        /// *****************************************************************
+        /// </summary>
+        static bool DisplayLogin()
+        {
+            string userName;
+            string password;
+            bool validLogin;
+            bool valid = true;
+            bool exit = false;
+            int incorrectLoginCounter = 0;
+            string userInput;
+
+
+            do
+            {
+
+                DisplayScreenHeader("Login");
+
+                validLogin = true;
+
+                Console.WriteLine("Please enter your Username");
+                userName = Console.ReadLine().ToLower();
+
+                Console.WriteLine("Now enter your password");
+                password = Console.ReadLine();
+
+                validLogin = DisplayValidLoginInfo(userName, password);
+
+                if (validLogin)
+                {
+                    Console.WriteLine("Congratulations you are now logged in");
+                    DisplayContinuePrompt();
+                }
+
+                else
+                {
+                    incorrectLoginCounter += 1;
+
+                    Console.WriteLine("Sorry but it appears that you have entered your userName or password incorrectly");
+                    Console.WriteLine("");
+                    Console.WriteLine("Please try again");
+
+                    DisplayContinuePrompt();
+
+                    // if wrong 3 times
+                    if (incorrectLoginCounter == 3)
+                    {
+
+                        do
+                        {
+                            DisplayScreenHeader("Login");
+
+                            Console.WriteLine("You have logged in incorrectly 3 times are you sure you are registered? \"Yes\" or \"No\"");
+                            userInput = Console.ReadLine().ToLower();
+
+                            if (userInput == "yes")
+                            {
+                                valid = true;
+                            }
+                            else if (userInput == "no")
+                            {
+                                valid = true;
+                                DisplayRegistration();
+                            }
+                            else
+                            {
+                                valid = false;
+                                DisplayInvalidResponse();
+
+                            }
+
+                        } while (!valid);
+                    }
+                    // if wrong 5 times
+                    if (incorrectLoginCounter == 5)
+                    {
+                        Console.WriteLine("I am sorry but you have incorrectly entered your password or user name too many times \n\tplease restart the program to try again");
+                        DisplayContinuePrompt();
+                        exit = true;
+                        validLogin = true;
+                    }
+                }
+
+            } while (!validLogin);
+
+            return exit;
+        }
+        
+        /// Validating Login Information
+        static bool DisplayValidLoginInfo(string userName, string password)
+        {
+            List<(string userName, string password)> registeredUserLoginInfo = new List<(string userName, string password)>();
+
+            bool validUser = false;
+
+
+            registeredUserLoginInfo = DisplayReadLoginInfoData();
+
+
+            foreach ((string userName, string password) userLoginInfo in registeredUserLoginInfo)
+            {
+                if ((userLoginInfo.userName == userName) && (userLoginInfo.password == password))
+                {
+                    validUser = true;
+                }
+            }
+
+            return validUser;
+        }
+
+        /// Reading the login information
+        static List<(string userName, string password)> DisplayReadLoginInfoData()
+        {
+            string dataPath = @"Login Data/Data.txt";
+
+            string[] loginInfoArray;
+            (string userName, string password) loginInfoTuple;
+
+            List<(string userName, string password)> registeredUserLoginInfo = new List<(string userName, string password)>();
+
+
+            loginInfoArray = File.ReadAllLines(dataPath);
+
+
+            foreach (string loginInfoText in loginInfoArray)
+            {
+                loginInfoArray = loginInfoText.Split(',');
+
+                loginInfoTuple.userName = loginInfoArray[0];
+                loginInfoTuple.password = loginInfoArray[1];
+
+                registeredUserLoginInfo.Add(loginInfoTuple);
+            }
+
+            return registeredUserLoginInfo;
+        }
+        #endregion
 
         #region TALENT SHOW
 
@@ -2477,6 +2767,8 @@ namespace Project_FinchControl
         
         }
         #endregion
+
+
 
         #region USER INTERFACE
 
